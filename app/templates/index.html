@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }}</title>
+    <meta name="description" content="Laboratório local para validação de Luhn e simulação de gateway de pagamento.">
+    <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
+</head>
+<body data-max-itens="{{ max_itens }}">
+    <div class="page">
+        <header class="hero">
+            <div class="hero__text">
+                <p class="eyebrow">Laboratório acadêmico · simulação local</p>
+                <h1>Painel Checker <span>&amp; Gateway</span></h1>
+                <p class="hero__subtitle">
+                    Valide números com o algoritmo de Luhn e simule respostas
+                    de um gateway de pagamento sem sair da máquina.
+                </p>
+            </div>
+            <div class="hero__meta">
+                <span class="badge badge--neutral">v{{ versao }}</span>
+                <a class="link" href="/docs" target="_blank" rel="noreferrer">
+                    Documentação da API ↗
+                </a>
+            </div>
+        </header>
+
+        <main class="layout">
+            <section class="panel panel--input" aria-labelledby="titulo-validacao">
+                <div class="panel__header">
+                    <div>
+                        <h2 id="titulo-validacao">Validação em lote</h2>
+                        <p class="muted">
+                            Um cartão por linha. Espaços, hífens e pontos são ignorados.
+                        </p>
+                    </div>
+                    <span class="counter" id="contador-itens">0 itens</span>
+                </div>
+
+                <label class="sr-only" for="input-lista">Lista de cartões</label>
+                <textarea
+                    id="input-lista"
+                    class="input input--textarea"
+                    rows="8"
+                    spellcheck="false"
+                    placeholder="4111 1111 1111 1111&#10;4012 0010 2345 6789&#10;5555 5555 5555 4444"
+                ></textarea>
+
+                <div class="actions">
+                    <button type="button" class="btn btn--primary" id="btn-validar">
+                        Validar lote
+                    </button>
+                    <button type="button" class="btn btn--ghost" id="btn-exemplo">
+                        Carregar exemplo
+                    </button>
+                    <button type="button" class="btn btn--ghost" id="btn-limpar">
+                        Limpar
+                    </button>
+                    <span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para validar</span>
+                </div>
+
+                <div id="alerta" class="alert" role="alert" hidden></div>
+            </section>
+
+            <aside class="panel panel--stats" aria-labelledby="titulo-resumo">
+                <div class="panel__header">
+                    <div>
+                        <h2 id="titulo-resumo">Resumo</h2>
+                        <p class="muted">Resultados da última execução.</p>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat__label">Total</span>
+                        <strong class="stat__value" id="stat-total">0</strong>
+                    </div>
+                    <div class="stat stat--ok">
+                        <span class="stat__label">Aprovados</span>
+                        <strong class="stat__value" id="stat-aprovados">0</strong>
+                    </div>
+                    <div class="stat stat--bad">
+                        <span class="stat__label">Reprovados</span>
+                        <strong class="stat__value" id="stat-reprovados">0</strong>
+                    </div>
+                    <div class="stat stat--rate">
+                        <span class="stat__label">Taxa de aprovação</span>
+                        <strong class="stat__value" id="stat-taxa">0%</strong>
+                    </div>
+                </div>
+
+                <p class="note">
+                    Nada é enviado para serviços externos. Tudo roda neste
+                    servidor local.
+                </p>
+            </aside>
+
+            <section class="panel panel--results" aria-labelledby="titulo-resultados">
+                <div class="panel__header">
+                    <div>
+                        <h2 id="titulo-resultados">Resultados</h2>
+                        <p class="muted">Detalhes item a item da validação de Luhn.</p>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Item</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-resultados">
+                            <tr>
+                                <td colspan="3" class="empty">
+                                    Nenhum dado processado ainda.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel panel--gateway" aria-labelledby="titulo-gateway">
+                <div class="panel__header">
+                    <div>
+                        <h2 id="titulo-gateway">Gateway simulado</h2>
+                        <p class="muted">
+                            Demonstração do endpoint <code>/api/gateway/pagar</code>.
+                        </p>
+                    </div>
+                    <span class="badge badge--neutral" id="status-gateway">Aguardando</span>
+                </div>
+
+                <form id="form-gateway" class="gateway-form" novalidate>
+                    <div class="field">
+                        <label for="input-cartao-gateway">Número do cartão</label>
+                        <input
+                            id="input-cartao-gateway"
+                            class="input"
+                            type="text"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            placeholder="4111 1111 1111 1111"
+                            value="4111 1111 1111 1111"
+                        >
+                    </div>
+                    <div class="field">
+                        <label for="input-valor-gateway">Valor (R$)</label>
+                        <input
+                            id="input-valor-gateway"
+                            class="input"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value="100.00"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn--primary" id="btn-gateway">
+                        Enviar ao gateway
+                    </button>
+                </form>
+
+                <pre id="resposta-gateway" class="code-block" aria-live="polite">A resposta da simulação aparecerá aqui.</pre>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Uso educacional. Este gateway é uma simulação e não processa pagamentos reais.</p>
+            <p>Regra da simulação: cartões com Luhn válido e prefixo <code>4</code> são aprovados.</p>
+        </footer>
+    </div>
+</body>
+</html>
